@@ -2,6 +2,7 @@ import * as Yup from 'yup';
 import HttpError from '../../../utils/HttpError';
 import PropertyVisit from '../../../models/PropertyVisit';
 import elasticClient from '../../../singletons/elasticClient';
+import VisitReminder from '../../../utils/VisitReminder';
 
 const paramsValidationSchema = Yup.object().shape({
     propertyId: Yup.string()
@@ -39,6 +40,7 @@ export default async (req, res, next) => {
                 id: visitId,
             },
         });
+        if (status === 'cancelled') VisitReminder.remove(visitId);
         res.json({ updated: true });
     } catch (err) {
         next(err);

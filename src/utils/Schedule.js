@@ -1,35 +1,37 @@
 import moment from 'moment-business-days';
 
+const fillHours = (date) => new Array(9).fill(null).map((_, i) => {
+    const newDate = date.set({
+        hour: 8 + i,
+        minute: 0,
+        second: 0,
+        millisecond: 0,
+    }).toDate();
+    return { date: newDate, visit: null };
+});
+
 export default class Schedule {
     constructor(visits) {
         this.visits = visits;
     }
 
-    fillHours(date) {
-        return new Array(9).fill(null).map((_, i) => {
-            const newDate = date.set({
-                hour: 8 + i,
-                minute: 0,
-                second: 0,
-                millisecond: 0,
-            });
+    fillVisits() {
+        this.dates.forEach(({ date }, index) => {
             const visit = this.visits.find(({ scheduledDate }) => (
-                newDate.isSame(scheduledDate)
-            )) || null;
-            return {
-                date: newDate.toDate(),
-                visit,
-            };
+                moment(date).isSame(scheduledDate)
+            ));
+            if (visit) this.dates[index].visit = visit;
         });
     }
 
     addDate(resolve) {
         if (this.dates.length !== 63) {
             const lastDate = this.dates[this.dates.length - 1];
-            const dates = this.fillHours(moment(lastDate.date).nextBusinessDay());
+            const dates = fillHours(moment(lastDate.date).nextBusinessDay());
             this.dates = this.dates.concat(dates);
             this.addDate(resolve);
         } else {
+            if (this.visits) this.fillVisits();
             resolve(this.dates);
         }
     }
@@ -39,7 +41,7 @@ export default class Schedule {
             const firstDay = moment().isBusinessDay()
                 ? moment()
                 : moment().nextBusinessDay();
-            this.dates = this.fillHours(firstDay);
+            this.dates = fillHours(firstDay);
             this.addDate(resolve);
         });
     }
